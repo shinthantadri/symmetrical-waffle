@@ -1,0 +1,43 @@
+Inventory management system for a retail store. Basic functionalities should include manage product/items, track inventory level, and generate reports. All data must be stored in text files.
+
+**Role 1: Core System and Product Management**
+
+- Design main menu interface
+- Implement add/update/delete product
+- View/display product details
+- Implement product data validation
+- Design product struct
+
+**Role 2: Inventory and Stock Management**
+
+- Implement add/update/remove/view stock
+- Implement low stock alerts system
+- Create threshold management system
+- Design inventory reporting functions
+- Design stock related data structures
+- Documentation of inventory management components
+
+**Role 3: Category and Supplier Management**
+
+- Implement add/update/delete/view for categories
+- Implement add/update/delete/view for suppliers
+- Design category/supplier filtering system
+- Create category/supplier reports
+- Documentation of categories and supplier
+
+**Role 4: User and Transaction Management**
+
+- Implement add/update/delete/view user information
+- Add transaction records / Delete transaction records
+- Update transaction status
+- View transaction history
+- Implement user authentication system
+- Create transaction logging and reporting
+- Documentation of user and transaction components
+
+**Role 5: File Operations**
+
+- Add data to text files
+- Update text files
+- Delete data from text files
+- Read and display data from text file

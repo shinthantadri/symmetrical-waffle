@@ -1,0 +1,12 @@
+SupplierID,SupplierName,Contact
+101,Tech_Supplies_Co.,+6012-345-6789
+102,Office_Essentials_Inc.,+6013-987-6543
+103,Stationery_Plus,+6014-765-4321
+104,Smart_Goods_Trading,+6015-123-4567
+105,Quality_Products_Ltd.,+6016-234-5678
+106,Personal_Care_Distributors,+6017-876-5432
+107,ElectroMart,+6018-654-3210
+108,Green_Eco_Supplies,+6019-345-6781
+109,KitchenCraft_Supplies,+6020-567-8901
+110,Books_&_Beyond,+6021-789-0123
+
