@@ -3,6 +3,17 @@
 #include <stdbool.h>
 #include <string.h>
 
+// Product struct
+typedef struct // Using typedef allows user to create products without using struct keyword everytime
+{
+  char productID[10];
+  char name[50];
+  char categoryID[10];
+  float price;
+  int quantity;
+  char supplierID[10];
+} Product;
+
 void printWelcomeMessage()
 {
   printf("\n");
@@ -117,27 +128,25 @@ void product_management()
 // addProduct function
 void addProduct()
 {
-  int stock_quantity;
-  char product_id[10], product_name[50], categoryID[20], supplier_ID[20];
-  float product_price;
+  Product newProduct;
 
   printf("Enter product id: ");
-  scanf(" %s", product_id);
+  scanf(" %s", newProduct.productID);
 
   printf("Enter product name: ");
-  scanf(" %s", product_name);
+  scanf(" %s", newProduct.name);
 
   printf("Enter quantity: ");
-  scanf("%d", &stock_quantity);
+  scanf("%d", &newProduct.quantity);
 
   printf("Enter categoryID: ");
-  scanf(" %s", categoryID);
+  scanf(" %s", newProduct.categoryID);
 
   printf("Enter supplierID: ");
-  scanf(" %s", supplier_ID);
+  scanf(" %s", newProduct.supplierID);
 
   printf("Enter product price: ");
-  scanf("%f", &product_price);
+  scanf("%f", &newProduct.price);
 
   // open the products.txt file and add the product
   FILE *file = fopen("products.txt", "a");
@@ -147,7 +156,7 @@ void addProduct()
     return;
   }
 
-  fprintf(file, "%s,%s,%d,%s,%s,%.2f\n", product_id, product_name, stock_quantity, categoryID, supplier_ID, product_price);
+  fprintf(file, "%s,%s,%s,%.2f,%d,%s\n", newProduct.productID, newProduct.name, newProduct.categoryID, newProduct.price, newProduct.quantity, newProduct.supplierID);
   printf("Product added successfully.\n");
   fclose(file);
 }
@@ -155,12 +164,11 @@ void addProduct()
 // deleteProduct function
 void deleteProduct()
 {
-  char product_id[10];
-  char line[256];
+  char productIDToDelete[10];
   bool found = false;
 
   printf("Enter the id of product you want to delete: ");
-  scanf(" %s", product_id);
+  scanf(" %s", productIDToDelete);
 
   FILE *file = fopen("products.txt", "r");
   if (file == NULL)
@@ -171,13 +179,15 @@ void deleteProduct()
 
   FILE *temp = fopen("temp.txt", "w"); // temporary file to store the data without the deleted product
 
+  char line[256];
+
   while (fgets(line, sizeof(line), file))
   {
     char current_id[10];
     sscanf(line, "%[^,]", current_id);
 
     // 1. Check if the product exist
-    if (strcmp(product_id, current_id) == 0)
+    if (strcmp(productIDToDelete, current_id) == 0)
     {
       found = true;
       continue;
@@ -195,7 +205,7 @@ void deleteProduct()
     remove("products.txt");
     rename("temp.txt", "products.txt");
 
-    printf("The product with id %s has been successfully deleted!\n", product_id);
+    printf("The product with id %s has been successfully deleted!\n", productIDToDelete);
   }
   else
   {
@@ -207,12 +217,11 @@ void deleteProduct()
 // updateProduct function
 void updateProduct()
 {
-  char product_id[10];
-  char line[256];
+  char productIDToUpdate[10];
   bool found = false;
 
   printf("Enter the ID of the product you want to update: ");
-  scanf(" %s", product_id);
+  scanf(" %s", productIDToUpdate);
 
   FILE *file = fopen("products.txt", "r");
   if (file == NULL)
@@ -223,19 +232,16 @@ void updateProduct()
 
   FILE *temp = fopen("temp.txt", "w");
 
+  Product product;
+  char line[256];
+
   while (fgets(line, sizeof(line), file))
   {
-    char current_id[10];
+    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%s", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID);
 
-    sscanf(line, "%[^,]", current_id);
-
-    if (strcmp(product_id, current_id) == 0)
+    if (strcmp(productIDToUpdate, product.productID) == 0)
     {
       found = true;
-      char name[50], categoryID[10], price[10], quantity[10], supplierID[10];
-      float priceFloat;
-
-      sscanf(line, "%*[^,],%[^,],%[^,],%[^,],%[^,],%s\n", name, categoryID, price, quantity, supplierID);
 
       int choice;
       printf("1. Product ID\n2. Name\n3. CategoryID\n4. Price\n5. Quantity\n6. SupplierID\n7. Exit to Menu\nPlease enter your choice: ");
@@ -245,36 +251,34 @@ void updateProduct()
       {
       case 1:
         printf("Enter the new ID: ");
-        scanf(" %s", current_id);
+        scanf(" %s", product.productID);
         break;
       case 2:
         printf("Enter the new name: ");
-        scanf(" %s", name);
+        scanf(" %s", product.name);
         break;
       case 3:
         printf("Enter the new category ID: ");
-        scanf(" %s", categoryID);
+        scanf(" %s", product.categoryID);
         break;
       case 4:
         printf("Enter the new price: ");
-        scanf(" %s", price);
+        scanf("%f", &product.price);
         break;
       case 5:
         printf("Enter new quantity ");
-        scanf(" %s", quantity);
+        scanf("%d", &product.quantity);
         break;
       case 6:
         printf("Enter the new supplier ID: ");
-        scanf(" %s", supplierID);
+        scanf(" %s", product.supplierID);
         break;
       case 7:
         printf("Exiting to Menu...");
         return;
       }
 
-      priceFloat = atof(price);
-
-      fprintf(temp, "%s,%s,%s,%.2f,%s,%s\n", current_id, name, categoryID, priceFloat, quantity, supplierID);
+      fprintf(temp, "%s,%s,%s,%.2f,%d,%s\n", product.productID, product.name, product.categoryID, product.price, product.quantity, product.supplierID);
       continue;
     }
     fputs(line, temp);
@@ -299,13 +303,10 @@ void updateProduct()
 // viewProducts function
 void viewProducts()
 {
-
-  char product_id[10], product_name[50], categoryID[10], supplier_ID[10], price[10], stock_quantity[10];
-
-  FILE *file;
+  Product product;
   char line[256];
 
-  file = fopen("products.txt", "r");
+  FILE *file = fopen("products.txt", "r");
 
   if (file == NULL)
   {
@@ -313,10 +314,10 @@ void viewProducts()
     return;
   }
 
-  while (fscanf(file, "%[^,],%[^,],%[^,],%[^,],%[^,],%s\n", product_id, product_name, categoryID, price, stock_quantity, supplier_ID) != EOF)
+  while (fscanf(file, "%[^,],%[^,],%[^,],%f,%d,%s\n", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID) != EOF)
   // scan line by line and assigne to each varaible each loop until end of file is reached which then it will exit the loop
   {
-    printf("ItemID: %s, Name: %s, CategoryID: %s, Price: %s RM, Stock quantity: %s, SupplierID: %s\n", product_id, product_name, categoryID, price, stock_quantity, supplier_ID);
+    printf("ItemID: %s, Name: %s, CategoryID: %s, Price: %.2f RM, Stock quantity: %d, SupplierID: %s\n", product.productID, product.name, product.categoryID, product.price, product.quantity, product.supplierID);
   }
 
   fclose(file);
