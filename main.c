@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define low_threshold_amount 50;
+#define low_threshold_amount 50
 
 // Product struct
 typedef struct // Using typedef allows user to create products without using struct keyword everytime
@@ -135,7 +135,7 @@ void addProduct()
   printf("Enter product id: ");
   scanf(" %s", newProduct.productID);
 
-  printf("Enter product name: ");
+  printf("Enter product name (Please do not use spaces as the system is not designed for it, use _ instead): ");
   scanf(" %s", newProduct.name);
 
   printf("Enter quantity: ");
@@ -316,11 +316,24 @@ void viewProducts()
     return;
   }
 
+  // Table Header
+  printf("------------------------------------------------------------------------------------------\n");
+  printf("| %-8s | %-20s | %-10s | %-8s | %-8s | %-10s |\n",
+         "ItemID", "Name", "CategoryID", "Price", "Stock", "SupplierID");
+  printf("------------------------------------------------------------------------------------------\n");
+
   while (fscanf(file, "%[^,],%[^,],%[^,],%f,%d,%s\n", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID) != EOF)
   // scan line by line and assigne to each varaible each loop until end of file is reached which then it will exit the loop
   {
-    printf("ItemID: %s, Name: %s, CategoryID: %s, Price: %.2f RM, Stock quantity: %d, SupplierID: %s\n", product.productID, product.name, product.categoryID, product.price, product.quantity, product.supplierID);
+    printf("| %-8s | %-20s | %-10s | %8.2f | %-8d | %-10s |\n",
+           product.productID,
+           product.name,
+           product.categoryID,
+           product.price,
+           product.quantity,
+           product.supplierID);
   }
+  printf("------------------------------------------------------------------------------------------\n");
 
   fclose(file);
 }
@@ -374,7 +387,7 @@ void processStockFile(const char *filename, StockCallback callback, void *data)
 
   if (!modified)
   {
-    printf("Product ID does not exist. No changes were made. Please try again.\n");
+    printf("Process cancelled (Product NOT EXIST or User cancelled). No changes were made. Please try again.\n");
   }
 }
 
@@ -405,7 +418,7 @@ void addStock()
   processStockFile("products.txt", addStockCallback, productID);
 }
 
-void removeStockCallback(Product *product, void *data, bool *modified)
+void deleteStockCallback(Product *product, void *data, bool *modified)
 {
   char *productID = (char *)data;
   char choice;
@@ -434,6 +447,62 @@ void removeStockCallback(Product *product, void *data, bool *modified)
   }
 }
 
+void deleteStock()
+{
+  char productID[10];
+  printf("Enter the ID of the product to remove stock: ");
+  scanf(" %s", productID);
+  processStockFile("products.txt", deleteStockCallback, productID);
+}
+
+void updateStockCallback(Product *product, void *data, bool *modified)
+{
+  char *productID = (char *)data;
+
+  if (strcmp(productID, product->productID) == 0)
+  {
+    int amount;
+    printf("The current stock of product(%s) with ID %s is %d\n", product->name, product->productID, product->quantity);
+    printf("Enter the amount of stock to update: ");
+    scanf("%d", &amount);
+
+    product->quantity = amount;
+    *modified = true;
+
+    printf("-----------------------Stock successfully updated for product %s-----------------------\n", product->productID);
+  }
+}
+
+void updateStock()
+{
+  char productID[10];
+  printf("Enter the ID of the product to update stock: ");
+  scanf(" %s", productID);
+  processStockFile("products.txt", updateStockCallback, productID);
+}
+
+void removeStockCallback(Product *product, void *data, bool *modified)
+{
+  char *productID = (char *)data;
+
+  if (strcmp(productID, product->productID) == 0)
+  {
+    int amount = product->quantity + 1;
+    printf("The current stock of product(%s) with ID %s is %d\n", product->name, product->productID, product->quantity);
+
+    while (amount > product->quantity)
+    {
+      printf("Enter the amount of stock to remove: ");
+      scanf("%d", &amount);
+    }
+
+    product->quantity -= amount;
+    *modified = true;
+
+    printf("-----------------------Stock successfully removed for product %s-----------------------\n", product->productID);
+  }
+}
+
 void removeStock()
 {
   char productID[10];
@@ -442,11 +511,64 @@ void removeStock()
   processStockFile("products.txt", removeStockCallback, productID);
 }
 
-void updateStock();
-void removeStock();
-void alertStock();
+void alertStock()
+{
+  printf("These are the products that are low on amount (<=%d).\n", low_threshold_amount);
+  FILE *productFile = fopen("products.txt", "r");
+
+  if (productFile == NULL)
+  {
+    printf("Error opening file.\n");
+    return;
+  }
+
+  char line[256];
+  Product product;
+
+  // Table Header
+  printf("--------------------------------------------\n");
+  printf("| %-10s | %-20s | %-8s |\n", "ProductID", "Product Name", "Quantity");
+  printf("--------------------------------------------\n");
+
+  while (fgets(line, sizeof(line), productFile))
+  {
+    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%s\n", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID);
+    if (product.quantity <= low_threshold_amount)
+    {
+      printf("| %-10s | %-20s | %-8d |\n", product.productID, product.name, product.quantity);
+    }
+  }
+  printf("---------------------------------------------\n");
+  fclose(productFile);
+}
+
 void customThreshold();
-void generateInventoryReport();
+
+void generateInventoryReport()
+{
+  // Table Header
+  printf("------------------------------------------------------------------------------------------\n");
+  printf("%-10s | %-15s | %-10s\n", "ProductID", "Product_Name", "Current Stock");
+  printf("------------------------------------------------------------------------------------------\n");
+
+  FILE *productFile = fopen("products.txt", "r");
+
+  if (productFile == NULL)
+  {
+    printf("Error opening file.\n");
+    return;
+  }
+
+  char line[256];
+  Product product;
+  while (fgets(line, sizeof(line), productFile))
+  {
+    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%s\n", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID);
+    printf("| %-10s | %-15s | %-10d |\n", product.productID, product.name, product.quantity);
+  }
+  printf("--------------------------------------------------------------------------------------\n");
+  fclose(productFile);
+}
 
 void stock_management()
 {
@@ -454,7 +576,7 @@ void stock_management()
   do
   {
     printf("Stock management selected.\n");
-    printf("1. Add stock\n2. Remove stock\n3. Update stock\n4. Remove stock(set it to 0)\n5. Alert low stock products\n6. Custom threshold Management\n7. Inventory Report\n8. Exit to main menu\n Please enter your choice: ");
+    printf("1. Add stock\n2. Remove stock\n3. Update stock\n4. delete stock(set it to 0)\n5. Alert low stock products\n6. Custom threshold Management\n7. Inventory Report\n8. Exit to main menu\n Please enter your choice: ");
     scanf("%d", &stock_choice);
 
     switch (stock_choice)
@@ -467,25 +589,25 @@ void stock_management()
       removeStock();
       break;
 
-      // case 3:
-      //   updateStock();
-      //   break;
+    case 3:
+      updateStock();
+      break;
 
-      // case 4:
-      //   removeStock();
-      //   break;
+    case 4:
+      deleteStock();
+      break;
 
-      // case 5:
-      //   alertStock();
-      //   break;
+    case 5:
+      alertStock();
+      break;
 
       // case 6:
       //   customThreshold();
       //   break;
 
-      // case 7:
-      //   genereateInventoryReport();
-      //   break;
+    case 7:
+      generateInventoryReport();
+      break;
 
     case 8:
       printf("Returning to the main menu...");
