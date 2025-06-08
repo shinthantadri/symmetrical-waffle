@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#define low_threshold_amount 50;
+
 // Product struct
 typedef struct // Using typedef allows user to create products without using struct keyword everytime
 {
@@ -28,6 +30,7 @@ void printWelcomeMessage()
 }
 
 void product_management();
+void stock_management();
 
 int main()
 {
@@ -48,9 +51,9 @@ int main()
       product_management();
       break;
 
-      // case 2:
-      //   inventory_management();
-      //   break;
+    case 2:
+      stock_management();
+      break;
 
     case 3:
       printf("Category and Supplier Management selected.\n");
@@ -119,7 +122,6 @@ void product_management()
   } while (product_option != 5);
 }
 
-// JUST AN IDEA --- helper functions
 // char findProduct()
 // {
 //   // return product ID if found, return "000" if not found
@@ -321,4 +323,177 @@ void viewProducts()
   }
 
   fclose(file);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
+// STOCK MANAGEMENT SYSTEM
+// We will keep using products.txt since it includes the current stock amount. No need to create a seperate file.
+
+// defining callback type for stock operations
+typedef void (*StockCallback)(Product *product, void *data, bool *modified);
+
+void processStockFile(const char *filename, StockCallback callback, void *data)
+{
+  FILE *productFile = fopen(filename, "r");
+  FILE *tempFile = fopen("temp.txt", "w");
+
+  if (productFile == NULL || tempFile == NULL)
+  {
+    printf("Error opening file. Please try again.\n");
+    return;
+  }
+
+  char line[256];
+  bool modified = false;
+
+  while (fgets(line, sizeof(line), productFile))
+  {
+    Product product;
+    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%s\n", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID);
+
+    // call the callback to perform desired stock operations
+    callback(&product, data, &modified);
+
+    if (modified)
+    {
+      // write the modified product to temp file
+      fprintf(tempFile, "%s,%s,%s,%.2f,%d,%s\n", product.productID, product.name, product.categoryID, product.price, product.quantity, product.supplierID);
+    }
+    else
+    {
+      fputs(line, tempFile);
+    }
+  }
+
+  fclose(productFile);
+  fclose(tempFile);
+
+  remove(filename);
+  rename("temp.txt", filename);
+
+  if (!modified)
+  {
+    printf("Product ID does not exist. No changes were made. Please try again.\n");
+  }
+}
+
+void addStockCallback(Product *product, void *data, bool *modified)
+{
+  char *productID = (char *)data;
+
+  if (strcmp(productID, product->productID) == 0)
+  {
+    int amount;
+    printf("The current stock of product(%s) with ID %s is %d\n", product->name, product->productID, product->quantity);
+    printf("Enter the amount of stock to add: ");
+    scanf("%d", &amount);
+
+    product->quantity += amount;
+    *modified = true;
+
+    printf("-----------------------Stock successfully updated for product %s-----------------------\n", product->productID);
+  }
+}
+
+void addStock()
+{
+  char productID[10];
+  printf("Enter the ID of the product to add stock: ");
+  scanf(" %s", productID);
+
+  processStockFile("products.txt", addStockCallback, productID);
+}
+
+void removeStockCallback(Product *product, void *data, bool *modified)
+{
+  char *productID = (char *)data;
+  char choice;
+
+  if (strcmp(productID, product->productID) == 0)
+  {
+    printf("The current stock of product(%s) with ID %s is %d\n", product->name, product->productID, product->quantity);
+    printf("Do you want to set it to 0? (y/n): ");
+    scanf(" %s", &choice);
+
+    if (choice == 'y')
+    {
+      product->quantity = 0;
+      *modified = true;
+
+      printf("-----------------------Stock successfully removed for product %s-----------------------\n", product->productID);
+    }
+    else if (choice == 'n')
+    {
+      return;
+    }
+    else
+    {
+      printf("Invalid option.\n Please try again\n");
+    }
+  }
+}
+
+void removeStock()
+{
+  char productID[10];
+  printf("Enter the ID of the product to remove stock: ");
+  scanf(" %s", productID);
+  processStockFile("products.txt", removeStockCallback, productID);
+}
+
+void updateStock();
+void removeStock();
+void alertStock();
+void customThreshold();
+void generateInventoryReport();
+
+void stock_management()
+{
+  int stock_choice;
+  do
+  {
+    printf("Stock management selected.\n");
+    printf("1. Add stock\n2. Remove stock\n3. Update stock\n4. Remove stock(set it to 0)\n5. Alert low stock products\n6. Custom threshold Management\n7. Inventory Report\n8. Exit to main menu\n Please enter your choice: ");
+    scanf("%d", &stock_choice);
+
+    switch (stock_choice)
+    {
+    case 1:
+      addStock();
+      break;
+
+    case 2:
+      removeStock();
+      break;
+
+      // case 3:
+      //   updateStock();
+      //   break;
+
+      // case 4:
+      //   removeStock();
+      //   break;
+
+      // case 5:
+      //   alertStock();
+      //   break;
+
+      // case 6:
+      //   customThreshold();
+      //   break;
+
+      // case 7:
+      //   genereateInventoryReport();
+      //   break;
+
+    case 8:
+      printf("Returning to the main menu...");
+      break;
+
+    default:
+      printf("Invalid option. Please try again.");
+      break;
+    }
+  } while (stock_choice != 8);
 }
