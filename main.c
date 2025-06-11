@@ -339,7 +339,6 @@ void viewProducts()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////
 // STOCK MANAGEMENT SYSTEM
 // We will keep using products.txt since it includes the current stock amount. No need to create a seperate file.
 
@@ -619,3 +618,108 @@ void stock_management()
     }
   } while (stock_choice != 8);
 }
+
+// User register, login and authentication
+typedef struct
+{
+  char username[20];
+  int password;
+} User;
+
+void user_login();
+void user_register();
+void user_functions(); // for login-ed users
+
+void user()
+{
+  int user_choice;
+
+  printf("1. Login\n2. New user? Register now!\n3. Back to main menu\nPlease choose an option: ");
+  scanf("%d", &user_choice);
+
+  do
+  {
+    switch (user_choice)
+    {
+    case 1:
+      user_login();
+      break;
+
+    case 2:
+      user_register();
+      break;
+
+    case 3:
+      printf("Returning to main menu...\n");
+      break;
+
+    default:
+      printf("Invalid option. Please try again\n");
+      break;
+    }
+
+  } while (user_choice != 3);
+}
+
+void user_register()
+{
+  char username[20];
+  int password;
+
+  printf("Enter username: ");
+  scanf(" %s", username);
+
+  printf("Please enter 3 digit password (cannot start with 0): ");
+  scanf("%d", &password);
+
+  FILE *userFile = fopen("users.txt", "a");
+  if (userFile == NULL)
+  {
+    printf("Error opening file. Please try again.");
+    return;
+  }
+
+  fprintf("%s,%d", username, password);
+
+  printf("Registerred successfully!\n");
+  fclose(userFile);
+}
+
+void user_login()
+{
+  char login_username[20];
+  int login_password;
+
+  printf("Enter your username: ");
+  scanf(" %s", login_username);
+
+  printf("Enter password (3 digits): ");
+  scanf("%d", &login_password);
+
+  User user;
+  char line[256];
+
+  FILE *userFile = fopen("users.txt", "r");
+  if (userFile == NULL)
+  {
+    printf("Error opening file. Please try again.\n");
+    return;
+  }
+
+  while (fgets(line, sizeof(line), userFile))
+  {
+    sscanf(line, "%[^,],%d\n", user.username, &user.password);
+    if (strcmp(login_username, user.username) == 0 && login_password == user.password)
+    {
+      printf("Login successful!\n");
+      user_functions(user.username, &user.password);
+      fclose(userFile);
+      return;
+    }
+  }
+
+  printf("Wrong username or password. Please try again.\n");
+  fclose(userFile);
+}
+
+void user_functions(char *username, int *password) {}
