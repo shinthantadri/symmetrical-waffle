@@ -715,8 +715,8 @@ void user_login()
     if (strcmp(login_username, user.username) == 0 && login_password == user.password)
     {
       printf("Login successful!\n");
-      user_functions(&user);
       fclose(userFile);
+      user_functions(&user);
       return;
     }
   }
@@ -811,15 +811,6 @@ void changeUsername(User *user)
   fclose(userFile);
   fclose(tempFile);
 
-  if (remove("users.txt") != 0)
-  {
-    perror("Error deleting users.txt");
-  }
-  if (rename("temp.txt", "users.txt") != 0)
-  {
-    perror("Error renaming temp.txt to users.txt");
-  }
-
-  // remove("users.txt");
-  // rename("temp.txt", "users.txt");
+  remove("users.txt");
+  rename("temp.txt", "users.txt");
 }
