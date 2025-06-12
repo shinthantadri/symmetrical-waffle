@@ -625,6 +625,8 @@ void stock_management()
 typedef struct
 {
   char username[20];
+  char contact[100];
+  char email[50];
   int password;
 } User;
 
@@ -666,7 +668,7 @@ void user()
 
 void user_register()
 {
-  char username[20];
+  char username[20], contact[20], email[50];
   int password;
 
   printf("Enter username: ");
@@ -675,6 +677,12 @@ void user_register()
   printf("Please enter 3 digit password (cannot start with 0): ");
   scanf("%d", &password);
 
+  printf("Enter contact number: ");
+  scanf(" %s", contact);
+
+  printf("Enter email address: ");
+  scanf(" %s", email);
+
   FILE *userFile = fopen("users.txt", "a");
   if (userFile == NULL)
   {
@@ -682,7 +690,7 @@ void user_register()
     return;
   }
 
-  fprintf(userFile, "%s,%d\n", username, password);
+  fprintf(userFile, "%s,%d,%s,%s\n", username, password, contact, email);
 
   printf("Registerred successfully!\n");
   fclose(userFile);
@@ -711,7 +719,7 @@ void user_login()
 
   while (fgets(line, sizeof(line), userFile))
   {
-    sscanf(line, "%[^,],%d\n", user.username, &user.password);
+    sscanf(line, "%[^,],%d,%[^,],%s\n", user.username, &user.password, user.contact, user.email);
     if (strcmp(login_username, user.username) == 0 && login_password == user.password)
     {
       printf("Login successful!\n");
@@ -727,8 +735,7 @@ void user_login()
 
 void placeOrder(User *user);
 void checkUnpaidOrders(User *user) {};
-void changeUsername(User *user);
-void changePassword(User *user) {};
+void updateInformation(User *user);
 
 void user_functions(User *user)
 {
@@ -736,7 +743,7 @@ void user_functions(User *user)
 
   do
   {
-    printf("1. Place an order\n2. Check unpaid orders\n3. Change username\n4. Change password\n5. Exit to main menu\nPlease choose an option: ");
+    printf("1. Place an order\n2. Check unpaid orders\n3. Update user information\n4. Exit to main menu\nPlease choose an option: ");
     scanf("%d", &user_choice);
 
     switch (user_choice)
@@ -750,14 +757,10 @@ void user_functions(User *user)
       break;
 
     case 3:
-      changeUsername(user);
+      updateInformation(user);
       break;
 
     case 4:
-      changePassword(user);
-      break;
-
-    case 5:
       printf("Returning to main menu...\n");
       break;
 
@@ -765,7 +768,7 @@ void user_functions(User *user)
       printf("Invalid choice, Please try again.\n");
       break;
     }
-  } while (user_choice != 5);
+  } while (user_choice != 4);
 }
 
 void placeOrder(User *user)
@@ -774,16 +777,13 @@ void placeOrder(User *user)
   return;
 }
 
-void changeUsername(User *user)
+void updateInformation(User *user)
 {
-  char oldUsername[20];
-  strcpy(oldUsername, user->username);
-
-  printf("Enter new username: ");
-  scanf(" %s", user->username);
+  int choice;
 
   FILE *userFile = fopen("users.txt", "r");
   FILE *tempFile = fopen("temp.txt", "w");
+  bool modified = false;
 
   if (userFile == NULL || tempFile == NULL)
   {
@@ -792,15 +792,50 @@ void changeUsername(User *user)
   }
 
   char line[256];
-  User currentUser;
+  char currentUsername[20];
 
   while (fgets(line, sizeof(line), userFile))
   {
-    sscanf(line, "%[^,],%d\n", currentUser.username, &currentUser.password);
-    if (strcmp(currentUser.username, oldUsername) == 0)
+    sscanf(line, "%[^,]", currentUsername);
+
+    if (strcmp(currentUsername, user->username) == 0)
     {
-      fprintf(tempFile, "%s,%d\n", user->username, user->password);
-      printf("Username successfully changed!\n");
+      printf("1. Username\n2. Password\n3. Contact Number\n4. Email address\n5. Exit to menu\nChoose which one to update: ");
+      scanf("%d", &choice);
+
+      switch (choice)
+      {
+      case 1:
+        printf("Enter new username: ");
+        scanf(" %s", user->username);
+        break;
+
+      case 2:
+        printf("Enter new password (3 digit pin and cannot start with 0): ");
+        scanf("%d", &user->password);
+        break;
+
+      case 3:
+        printf("Enter new contact number: ");
+        scanf(" %s", user->contact);
+        break;
+
+      case 4:
+        printf("Enter new email address: ");
+        scanf(" %s", user->email);
+        break;
+
+      case 5:
+        printf("Returing to menu...\n");
+        break;
+
+      default:
+        printf("Invalid option. Please try again\n");
+        break;
+      }
+
+      fprintf(tempFile, "%s,%d,%s,%s\n", user->username, user->password, user->contact, user->email);
+      modified = true;
     }
     else
     {
@@ -811,6 +846,15 @@ void changeUsername(User *user)
   fclose(userFile);
   fclose(tempFile);
 
-  remove("users.txt");
-  rename("temp.txt", "users.txt");
+  if (modified)
+  {
+    remove("users.txt");
+    rename("temp.txt", "users.txt");
+    printf("Information successfully updated!\n");
+  }
+  else
+  {
+    remove("temp.txt");
+    printf("No changeds were made.\n");
+  }
 }
