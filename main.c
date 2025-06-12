@@ -682,7 +682,7 @@ void user_register()
     return;
   }
 
-  fprintf(userFile, "%s,%d", username, password);
+  fprintf(userFile, "%s,%d\n", username, password);
 
   printf("Registerred successfully!\n");
   fclose(userFile);
@@ -727,7 +727,7 @@ void user_login()
 
 void placeOrder(User *user);
 void checkUnpaidOrders(User *user) {};
-void changeUsername(User *user) {};
+void changeUsername(User *user);
 void changePassword(User *user) {};
 
 void user_functions(User *user)
@@ -772,4 +772,54 @@ void placeOrder(User *user)
 {
   printf("Current user: %s\n", user->username);
   return;
+}
+
+void changeUsername(User *user)
+{
+  char oldUsername[20];
+  strcpy(oldUsername, user->username);
+
+  printf("Enter new username: ");
+  scanf(" %s", user->username);
+
+  FILE *userFile = fopen("users.txt", "r");
+  FILE *tempFile = fopen("temp.txt", "w");
+
+  if (userFile == NULL || tempFile == NULL)
+  {
+    printf("Error opening file. Please try again.\n");
+    return;
+  }
+
+  char line[256];
+  User currentUser;
+
+  while (fgets(line, sizeof(line), userFile))
+  {
+    sscanf(line, "%[^,],%d\n", currentUser.username, &currentUser.password);
+    if (strcmp(currentUser.username, oldUsername) == 0)
+    {
+      fprintf(tempFile, "%s,%d\n", user->username, user->password);
+      printf("Username successfully changed!\n");
+    }
+    else
+    {
+      fputs(line, tempFile);
+    }
+  }
+
+  fclose(userFile);
+  fclose(tempFile);
+
+  if (remove("users.txt") != 0)
+  {
+    perror("Error deleting users.txt");
+  }
+  if (rename("temp.txt", "users.txt") != 0)
+  {
+    perror("Error renaming temp.txt to users.txt");
+  }
+
+  // remove("users.txt");
+  // rename("temp.txt", "users.txt");
 }

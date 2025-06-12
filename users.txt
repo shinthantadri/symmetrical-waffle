@@ -1,1 +1,1 @@
-adrian,123dextor,800
+dextor,123
