@@ -773,8 +773,6 @@ void user_functions(User *user)
 
 void placeOrder(User *user)
 {
-  printf("Current user: %s\n", user->username);
-  return;
 }
 
 void updateInformation(User *user)
