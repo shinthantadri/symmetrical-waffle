@@ -31,6 +31,7 @@ void printWelcomeMessage()
 
 void product_management();
 void stock_management();
+void user();
 
 int main()
 {
@@ -61,6 +62,7 @@ int main()
 
     case 4:
       printf("User and Transaction Management selected.\n");
+      user();
       break;
 
     case 5:
@@ -628,17 +630,18 @@ typedef struct
 
 void user_login();
 void user_register();
-void user_functions(); // for login-ed users
+void user_functions(User *user); // for login-ed users
 
 void user()
 {
   int user_choice;
 
-  printf("1. Login\n2. New user? Register now!\n3. Back to main menu\nPlease choose an option: ");
-  scanf("%d", &user_choice);
-
   do
   {
+
+    printf("1. Login\n2. New user? Register now!\n3. Back to main menu\nPlease choose an option: ");
+    scanf("%d", &user_choice);
+
     switch (user_choice)
     {
     case 1:
@@ -679,7 +682,7 @@ void user_register()
     return;
   }
 
-  fprintf("%s,%d", username, password);
+  fprintf(userFile, "%s,%d", username, password);
 
   printf("Registerred successfully!\n");
   fclose(userFile);
@@ -712,7 +715,7 @@ void user_login()
     if (strcmp(login_username, user.username) == 0 && login_password == user.password)
     {
       printf("Login successful!\n");
-      user_functions(user.username, &user.password);
+      user_functions(&user);
       fclose(userFile);
       return;
     }
@@ -722,4 +725,51 @@ void user_login()
   fclose(userFile);
 }
 
-void user_functions(char *username, int *password) {}
+void placeOrder(User *user);
+void checkUnpaidOrders(User *user) {};
+void changeUsername(User *user) {};
+void changePassword(User *user) {};
+
+void user_functions(User *user)
+{
+  int user_choice;
+
+  do
+  {
+    printf("1. Place an order\n2. Check unpaid orders\n3. Change username\n4. Change password\n5. Exit to main menu\nPlease choose an option: ");
+    scanf("%d", &user_choice);
+
+    switch (user_choice)
+    {
+    case 1:
+      placeOrder(user);
+      break;
+
+    case 2:
+      checkUnpaidOrders(user);
+      break;
+
+    case 3:
+      changeUsername(user);
+      break;
+
+    case 4:
+      changePassword(user);
+      break;
+
+    case 5:
+      printf("Returning to main menu...\n");
+      break;
+
+    default:
+      printf("Invalid choice, Please try again.\n");
+      break;
+    }
+  } while (user_choice != 5);
+}
+
+void placeOrder(User *user)
+{
+  printf("Current user: %s\n", user->username);
+  return;
+}
