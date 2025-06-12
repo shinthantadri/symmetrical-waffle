@@ -1,1 +1,4 @@
-CategoryID|CategoryName
+01,Stationary
+02,personal_care
+03,Eletronics
+04,Office_Supplies
