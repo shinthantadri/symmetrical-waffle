@@ -1,2 +1,1 @@
-TransactionID|ItemID|Quantity|TransactionType|Date
 

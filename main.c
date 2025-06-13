@@ -771,8 +771,132 @@ void user_functions(User *user)
   } while (user_choice != 4);
 }
 
+int getNextTransactionID()
+{
+  FILE *file = fopen("last_transaction_id.txt", "r+");
+  int id = 1000; // default start
+
+  if (file == NULL)
+  {
+    // File does not exist, create it
+    file = fopen("last_transaction_id.txt", "w+");
+    if (file == NULL)
+    {
+      printf("Error opening transaction ID file.\n");
+      return -1;
+    }
+  }
+  else
+  {
+    fscanf(file, "%d", &id);
+  }
+
+  id++; // increment for new transaction
+
+  // Move to start and overwrite with new id
+  rewind(file);
+  fprintf(file, "%d", id);
+  fclose(file);
+
+  return id;
+}
+
 void placeOrder(User *user)
 {
+  float total = 0;
+  int choice;
+  char productID[10];
+  Product product;
+  bool found = false;
+  char line[256];
+  int paidStatus;
+  char date[50];
+  int transactionID;
+
+  do
+  {
+    printf("1. Add item\n2. Checkout\n3. Return to menu\nPlease choose an option: ");
+    scanf("%d", &choice);
+
+    switch (choice)
+    {
+
+    // ADDING ITEM
+    case 1:
+      printf("Enter product ID: ");
+      scanf(" %s", productID);
+
+      FILE *productsFile = fopen("products.txt", "r");
+      if (productsFile == NULL)
+      {
+        printf("Error opening file. Please try again.\n");
+        return;
+      }
+
+      while (fgets(line, sizeof(line), productsFile))
+      {
+        sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%s", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID);
+
+        if (strcmp(productID, product.productID) == 0)
+        {
+          found = true;
+          int quantity;
+          printf("Enter quantity: ");
+          scanf("%d", &quantity);
+
+          total += product.price * quantity;
+          printf("Item successfully added to the cart.\n");
+        }
+      }
+
+      fclose(productsFile);
+
+      if (!found)
+      {
+        printf("The product ID does not exist. Please try again.\n");
+        return;
+      }
+
+      break;
+
+    //   CHECKOUT
+    case 2:
+      if (!total)
+      {
+        printf("Please add an item first to checkout.\n");
+        return;
+      }
+
+      transactionID = getNextTransactionID();
+
+      printf("Plese enter today date (dd/mm/yyyy): ");
+      scanf(" %s", date);
+
+      printf("Total amount is %.2f\n", total);
+      printf("Do you want to pay now? (Enter 1 to pay now or 0 to pay later): ");
+      scanf("%d", &paidStatus);
+
+      FILE *transectionsFile = fopen("transections.txt", "a");
+      if (transectionsFile == NULL)
+      {
+        printf("Error opening file. Please try again.\n");
+        return;
+      }
+
+      fprintf(transectionsFile, "%d,%s,%.2f,%d,%s\n", transactionID, user->username, total, paidStatus, date);
+      printf("Transaction successfully recorded.\n");
+      fclose(transectionsFile);
+      break;
+
+    case 3:
+      printf("Returning to main menu...\n");
+      return;
+
+    default:
+      printf("Invalid option. Please try again.\n");
+      break;
+    }
+  } while (choice != 2);
 }
 
 void updateInformation(User *user)
