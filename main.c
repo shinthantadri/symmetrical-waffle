@@ -32,6 +32,7 @@ void printWelcomeMessage()
 void product_management();
 void stock_management();
 void category_supplier_management();
+void user();
 
 int main()
 {
@@ -45,7 +46,8 @@ int main()
 
     printf("Please select an option: ");
     scanf("%d", &main_menu_option);
-    while(getchar() !='\n');
+    while (getchar() != '\n')
+      ;
 
     switch (main_menu_option)
     {
@@ -63,6 +65,7 @@ int main()
 
     case 4:
       printf("User and Transaction Management selected.\n");
+      user();
       break;
 
     case 5:
@@ -340,7 +343,6 @@ void viewProducts()
   fclose(file);
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // STOCK MANAGEMENT SYSTEM
 // We will keep using products.txt since it includes the current stock amount. No need to create a seperate file.
@@ -621,12 +623,416 @@ void stock_management()
     }
   } while (stock_choice != 8);
 }
+
+// User register, login and authentication
+typedef struct
+{
+  char username[20];
+  char contact[100];
+  char email[50];
+  int password;
+} User;
+
+typedef struct
+{
+  int transactionID;
+  char username[20];
+  float total;
+  int paidStatus;
+  char date[50];
+} Transaction;
+
+void user_login();
+void user_register();
+void user_functions(User *user); // for login-ed users
+
+void user()
+{
+  int user_choice;
+
+  do
+  {
+
+    printf("1. Login\n2. New user? Register now!\n3. Back to main menu\nPlease choose an option: ");
+    scanf("%d", &user_choice);
+
+    switch (user_choice)
+    {
+    case 1:
+      user_login();
+      break;
+
+    case 2:
+      user_register();
+      break;
+
+    case 3:
+      printf("Returning to main menu...\n");
+      break;
+
+    default:
+      printf("Invalid option. Please try again\n");
+      break;
+    }
+
+  } while (user_choice != 3);
+}
+
+void user_register()
+{
+  char username[20], contact[20], email[50];
+  int password;
+
+  printf("Enter username: ");
+  scanf(" %s", username);
+
+  printf("Please enter 3 digit password (cannot start with 0): ");
+  scanf("%d", &password);
+
+  printf("Enter contact number: ");
+  scanf(" %s", contact);
+
+  printf("Enter email address: ");
+  scanf(" %s", email);
+
+  FILE *userFile = fopen("users.txt", "a");
+  if (userFile == NULL)
+  {
+    printf("Error opening file. Please try again.");
+    return;
+  }
+
+  fprintf(userFile, "%s,%d,%s,%s\n", username, password, contact, email);
+
+  printf("Registerred successfully!\n");
+  fclose(userFile);
+}
+
+void user_login()
+{
+  char login_username[20];
+  int login_password;
+
+  printf("Enter your username: ");
+  scanf(" %s", login_username);
+
+  printf("Enter password (3 digits): ");
+  scanf("%d", &login_password);
+
+  User user;
+  char line[256];
+
+  FILE *userFile = fopen("users.txt", "r");
+  if (userFile == NULL)
+  {
+    printf("Error opening file. Please try again.\n");
+    return;
+  }
+
+  while (fgets(line, sizeof(line), userFile))
+  {
+    sscanf(line, "%[^,],%d,%[^,],%s\n", user.username, &user.password, user.contact, user.email);
+    if (strcmp(login_username, user.username) == 0 && login_password == user.password)
+    {
+      printf("Login successful!\n");
+      fclose(userFile);
+      user_functions(&user);
+      return;
+    }
+  }
+
+  printf("Wrong username or password. Please try again.\n");
+  fclose(userFile);
+}
+
+void placeOrder(User *user);
+void checkUnpaidOrders(User *user);
+void updateInformation(User *user);
+
+void user_functions(User *user)
+{
+  int user_choice;
+
+  do
+  {
+    printf("1. Place an order\n2. Check unpaid orders\n3. Update user information\n4. Exit to main menu\nPlease choose an option: ");
+    scanf("%d", &user_choice);
+
+    switch (user_choice)
+    {
+    case 1:
+      placeOrder(user);
+      break;
+
+    case 2:
+      checkUnpaidOrders(user);
+      break;
+
+    case 3:
+      updateInformation(user);
+      break;
+
+    case 4:
+      printf("Returning to main menu...\n");
+      break;
+
+    default:
+      printf("Invalid choice, Please try again.\n");
+      break;
+    }
+  } while (user_choice != 4);
+}
+
+int getNextTransactionID()
+{
+  FILE *file = fopen("last_transaction_id.txt", "r+");
+  int id = 1000; // default start
+
+  if (file == NULL)
+  {
+    // File does not exist, create it
+    file = fopen("last_transaction_id.txt", "w+");
+    if (file == NULL)
+    {
+      printf("Error opening transaction ID file.\n");
+      return -1;
+    }
+  }
+  else
+  {
+    fscanf(file, "%d", &id);
+  }
+
+  id++; // increment for new transaction
+
+  // Move to start and overwrite with new id
+  rewind(file);
+  fprintf(file, "%d", id);
+  fclose(file);
+
+  return id;
+}
+
+void placeOrder(User *user)
+{
+  float total = 0;
+  int choice;
+  char productID[10];
+  Product product;
+  bool found = false;
+  char line[256];
+  int paidStatus;
+  char date[50];
+  int transactionID;
+
+  do
+  {
+    printf("1. Add item\n2. Checkout\n3. Return to menu\nPlease choose an option: ");
+    scanf("%d", &choice);
+
+    switch (choice)
+    {
+
+    // ADDING ITEM
+    case 1:
+      printf("Enter product ID: ");
+      scanf(" %s", productID);
+
+      FILE *productsFile = fopen("products.txt", "r");
+      if (productsFile == NULL)
+      {
+        printf("Error opening file. Please try again.\n");
+        return;
+      }
+
+      while (fgets(line, sizeof(line), productsFile))
+      {
+        sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%s", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID);
+
+        if (strcmp(productID, product.productID) == 0)
+        {
+          found = true;
+          int quantity;
+          printf("Enter quantity: ");
+          scanf("%d", &quantity);
+
+          total += product.price * quantity;
+          printf("Item successfully added to the cart.\n");
+        }
+      }
+
+      fclose(productsFile);
+
+      if (!found)
+      {
+        printf("The product ID does not exist. Please try again.\n");
+        return;
+      }
+
+      break;
+
+    //   CHECKOUT
+    case 2:
+      if (!total)
+      {
+        printf("Please add an item first to checkout.\n");
+        return;
+      }
+
+      transactionID = getNextTransactionID();
+
+      printf("Plese enter today date (dd/mm/yyyy): ");
+      scanf(" %s", date);
+
+      printf("Total amount is %.2f\n", total);
+      printf("Do you want to pay now? (Enter 1 to pay now or 0 to pay later): ");
+      scanf("%d", &paidStatus);
+
+      FILE *transectionsFile = fopen("transections.txt", "a");
+      if (transectionsFile == NULL)
+      {
+        printf("Error opening file. Please try again.\n");
+        return;
+      }
+
+      fprintf(transectionsFile, "%d,%s,%.2f,%d,%s\n", transactionID, user->username, total, paidStatus, date);
+      printf("Transaction successfully recorded.\n");
+      fclose(transectionsFile);
+      break;
+
+    case 3:
+      printf("Returning to main menu...\n");
+      return;
+
+    default:
+      printf("Invalid option. Please try again.\n");
+      break;
+    }
+  } while (choice != 2);
+}
+
+void checkUnpaidOrders(User *user)
+{
+  printf("Please wait while we check for your unpaid orders...\n");
+  bool haveUnpaid = false;
+
+  FILE *file = fopen("transections.txt", "r");
+  if (file == NULL)
+  {
+    printf("Error opening file. Please try again.\n");
+    return;
+  }
+
+  char line[256];
+  Transaction curTransaction;
+
+  while (fgets(line, sizeof(line), file))
+  {
+    sscanf(line, "%d,%[^,],%f,%d,%s\n", &curTransaction.transactionID, curTransaction.username, &curTransaction.total, &curTransaction.paidStatus, curTransaction.date);
+
+    if (strcmp(user->username, curTransaction.username) == 0 && !curTransaction.paidStatus)
+    {
+      haveUnpaid = true;
+      printf("Transaction ID: %d, Total Amount: %.2f RM, Status: Unpaid\n", curTransaction.transactionID, curTransaction.total);
+    }
+  }
+
+  fclose(file);
+  if (!haveUnpaid)
+  {
+    printf("You have no UNPAID orders for now.\n");
+  }
+}
+
+void updateInformation(User *user)
+{
+  int choice;
+
+  FILE *userFile = fopen("users.txt", "r");
+  FILE *tempFile = fopen("temp.txt", "w");
+  bool modified = false;
+
+  if (userFile == NULL || tempFile == NULL)
+  {
+    printf("Error opening file. Please try again.\n");
+    return;
+  }
+
+  char line[256];
+  char currentUsername[20];
+
+  while (fgets(line, sizeof(line), userFile))
+  {
+    sscanf(line, "%[^,]", currentUsername);
+
+    if (strcmp(currentUsername, user->username) == 0)
+    {
+      printf("1. Username\n2. Password\n3. Contact Number\n4. Email address\n5. Exit to menu\nChoose which one to update: ");
+      scanf("%d", &choice);
+
+      switch (choice)
+      {
+      case 1:
+        printf("Enter new username: ");
+        scanf(" %s", user->username);
+        break;
+
+      case 2:
+        printf("Enter new password (3 digit pin and cannot start with 0): ");
+        scanf("%d", &user->password);
+        break;
+
+      case 3:
+        printf("Enter new contact number: ");
+        scanf(" %s", user->contact);
+        break;
+
+      case 4:
+        printf("Enter new email address: ");
+        scanf(" %s", user->email);
+        break;
+
+      case 5:
+        printf("Returing to menu...\n");
+        break;
+
+      default:
+        printf("Invalid option. Please try again\n");
+        break;
+      }
+
+      fprintf(tempFile, "%s,%d,%s,%s\n", user->username, user->password, user->contact, user->email);
+      modified = true;
+    }
+    else
+    {
+      fputs(line, tempFile);
+    }
+  }
+
+  fclose(userFile);
+  fclose(tempFile);
+
+  if (modified)
+  {
+    remove("users.txt");
+    rename("temp.txt", "users.txt");
+    printf("Information successfully updated!\n");
+  }
+  else
+  {
+    remove("temp.txt");
+    printf("No changeds were made.\n");
+  }
+}
 // role 3 category and supplier
-typedef struct {
+typedef struct
+{
   char categoryID[5];
   char categoryName[50];
 } Category;
-typedef struct{
+typedef struct
+{
   char supplierID[5];
   char suppliername[50];
   char contact[50];
@@ -640,250 +1046,316 @@ void viewsupplier();
 void updatesupplier();
 void deletesupplier();
 
-void category_supplier_management(){
+void category_supplier_management()
+{
   int choice;
-  do{
+  do
+  {
     printf("\nCategory and Supplier Management\n");
     printf("1.Add Category\n2.View Categories\n3.Update Category\n4.Delete Category\n");
     printf("5.Add Supplier\n6.View Suppliers\n7.Update Supplier\n8.Delete Supplier\n9.Back to main manu\n");
     printf("Choose your option: ");
-    scanf("%d",&choice);
+    scanf("%d", &choice);
 
-    switch (choice){
-      case 1: addcategory();break;
-      case 2: viewcategories();break;
-      case 3: updatecategory();break;
-      case 4: deletecategory();break;
-      case 5: addsupplier();break;
-      case 6: viewsupplier();break;
-      case 7: updatesupplier();break;
-      case 8: deletesupplier();break;
-      case 9: printf("Returning to main menu...\n");break;
-      default: printf("Invalid option,please try again!\n");
+    switch (choice)
+    {
+    case 1:
+      addcategory();
+      break;
+    case 2:
+      viewcategories();
+      break;
+    case 3:
+      updatecategory();
+      break;
+    case 4:
+      deletecategory();
+      break;
+    case 5:
+      addsupplier();
+      break;
+    case 6:
+      viewsupplier();
+      break;
+    case 7:
+      updatesupplier();
+      break;
+    case 8:
+      deletesupplier();
+      break;
+    case 9:
+      printf("Returning to main menu...\n");
+      break;
+    default:
+      printf("Invalid option,please try again!\n");
     }
-  }while (choice!=9);
+  } while (choice != 9);
 }
 
-void addcategory(){
+void addcategory()
+{
   Category ct;
   printf("Enter Category ID: ");
-  scanf("%s",ct.categoryID);
+  scanf("%s", ct.categoryID);
   printf("Enter Category Name: ");
-  scanf("%s",ct.categoryName);
+  scanf("%s", ct.categoryName);
 
-  FILE *c= fopen("category.txt","a");
-  if(!c){
+  FILE *c = fopen("category.txt", "a");
+  if (!c)
+  {
     printf("Unable to open the file!\n");
     return;
   }
-  fprintf(c, "%s,%s\n",ct.categoryID,ct.categoryName);
+  fprintf(c, "%s,%s\n", ct.categoryID, ct.categoryName);
   fclose(c);
   printf("Category added succesfully!\n");
 }
 
-void viewcategories(){
+void viewcategories()
+{
   Category ct;
   char line[100];
-  FILE *c= fopen("category.txt","r");
-  if(!c){
+  FILE *c = fopen("category.txt", "r");
+  if (!c)
+  {
     printf("Unable to open this file!\n");
     return;
   }
   printf("-------- Category List --------\n");
   printf("%-10s | %-20s\n", "ID", "Name");
   printf("-------------------------------\n");
- while (fgets(line,sizeof(line),c)){
-   sscanf(line, "%[^,],%s",ct.categoryID,ct.categoryName);
-   printf("%-10s | %-20s\n",ct.categoryID,ct.categoryName);
- }fclose(c);
+  while (fgets(line, sizeof(line), c))
+  {
+    sscanf(line, "%[^,],%s", ct.categoryID, ct.categoryName);
+    printf("%-10s | %-20s\n", ct.categoryID, ct.categoryName);
+  }
+  fclose(c);
   printf("\nPress Enter to return to the menu...");
   getchar();
   getchar();
 }
 
-void deletecategory(){
-  char id[5],line[100],currentid[10];
+void deletecategory()
+{
+  char id[5], line[100], currentid[10];
   int found = 0;
   printf("Enter category ID to delete: ");
-  scanf("%s",id);
+  scanf("%s", id);
 
-  FILE *c=fopen("category.txt","r");
-  FILE *temp= fopen("temp.txt","w");
+  FILE *c = fopen("category.txt", "r");
+  FILE *temp = fopen("temp.txt", "w");
 
-  if(!c||!temp){
+  if (!c || !temp)
+  {
     printf("File error\n");
     return;
   }
-  while (fgets(line, sizeof(line),c)){
+  while (fgets(line, sizeof(line), c))
+  {
     sscanf(line, "%[^,]", currentid);
-    if(strcmp(id, currentid)==0){
-      found=1;
+    if (strcmp(id, currentid) == 0)
+    {
+      found = 1;
       continue;
-    }fputs(line, temp);
-  } fclose(c);
+    }
+    fputs(line, temp);
+  }
+  fclose(c);
   fclose(temp);
-  if (found){
+  if (found)
+  {
     remove("category.txt");
-    rename("temp.txt","category.txt");
+    rename("temp.txt", "category.txt");
     printf("Category deleted succesfully!\n");
-  } else{
+  }
+  else
+  {
     remove("temp.txt");
     printf("Category was not found!\n");
   }
 }
 
-void updatecategory(){
+void updatecategory()
+{
   char id[5], newname[50], line[100];
-  int found=0;
+  int found = 0;
   Category ct;
 
   printf("Enter Category ID to update: ");
   scanf(" %s", id);
 
-  FILE *c =fopen("category.txt","r");
-  FILE *temp=fopen("temp.txt","w");
+  FILE *c = fopen("category.txt", "r");
+  FILE *temp = fopen("temp.txt", "w");
 
-  if(!c || !temp){
+  if (!c || !temp)
+  {
     printf("file error\n");
     return;
   }
-  while (fgets(line, sizeof(line), c)){
-    sscanf(line, "%[^,],%s", ct.categoryID,ct.categoryName);
-    if(strcmp(id, ct.categoryID)==0){
+  while (fgets(line, sizeof(line), c))
+  {
+    sscanf(line, "%[^,],%s", ct.categoryID, ct.categoryName);
+    if (strcmp(id, ct.categoryID) == 0)
+    {
       printf("Enter new Category Name: ");
       scanf("%s", &newname);
-      fprintf(temp, "%s,%s\n",ct.categoryID, newname);
-      found=1;
-    }else{
+      fprintf(temp, "%s,%s\n", ct.categoryID, newname);
+      found = 1;
+    }
+    else
+    {
       fputs(line, temp);
     }
-  } 
+  }
   fclose(c);
   fclose(temp);
 
-  if(found){
+  if (found)
+  {
     remove("category.txt");
-    rename("temp.txt","category.txt");
+    rename("temp.txt", "category.txt");
     printf("Category updated succesfully");
-  } else {
+  }
+  else
+  {
     remove("temp.txt");
     printf("Category ID not found!\n");
   }
 }
 
-void addsupplier(){
-Supplier s;
-printf("Enter Supplier ID : ");
-scanf(" %s", s.supplierID);
-printf("Enter Supplier Name : ");
-scanf(" %s", s.suppliername);
-printf("Enter the contact number: ");
-scanf(" %s", s.contact);
+void addsupplier()
+{
+  Supplier s;
+  printf("Enter Supplier ID : ");
+  scanf(" %s", s.supplierID);
+  printf("Enter Supplier Name : ");
+  scanf(" %s", s.suppliername);
+  printf("Enter the contact number: ");
+  scanf(" %s", s.contact);
 
-FILE *sp=fopen("supplier.txt","a");
-if(!sp){
-  printf("Error open file!\n");
-  return;
-}
-fprintf(sp, "%s,%s,%s\n", s.supplierID, s.suppliername, s.contact);
-fclose(sp);
-printf("Supplier added succesfully");
+  FILE *sp = fopen("supplier.txt", "a");
+  if (!sp)
+  {
+    printf("Error open file!\n");
+    return;
+  }
+  fprintf(sp, "%s,%s,%s\n", s.supplierID, s.suppliername, s.contact);
+  fclose(sp);
+  printf("Supplier added succesfully");
 }
 
-void viewsupplier(){
+void viewsupplier()
+{
   Supplier s;
   char line[100];
-  FILE *sp=fopen("supplier.txt","r");
-  if(!sp){
+  FILE *sp = fopen("supplier.txt", "r");
+  if (!sp)
+  {
     printf("Error open file\n");
     return;
   }
- printf("-------- Supplier List --------\n");
- printf("%-10s | %-20s | %-30s\n", "ID", "Name", "Contact");
- printf("--------------------------------------------------------------\n");
+  printf("-------- Supplier List --------\n");
+  printf("%-10s | %-20s | %-30s\n", "ID", "Name", "Contact");
+  printf("--------------------------------------------------------------\n");
 
- while(fgets(line,sizeof(line),sp)){
-  sscanf(line, "%[^,],%[^,],%s", s.supplierID, s.suppliername, s.contact);
-  printf("%-10s | %-20s | %-30s\n", s.supplierID, s.suppliername, s.contact);
- }
- fclose(sp);
- printf("Press enter to return menu....");
- getchar();
- getchar();
+  while (fgets(line, sizeof(line), sp))
+  {
+    sscanf(line, "%[^,],%[^,],%s", s.supplierID, s.suppliername, s.contact);
+    printf("%-10s | %-20s | %-30s\n", s.supplierID, s.suppliername, s.contact);
+  }
+  fclose(sp);
+  printf("Press enter to return menu....");
+  getchar();
+  getchar();
 }
 
-void deletesupplier(){
+void deletesupplier()
+{
   char id[10], line[100], currentID[10];
-  int found=0;
+  int found = 0;
   printf("Enter the Supplier ID to delete: ");
   scanf(" %s", id);
-  
-  FILE *sp=fopen("supplier.txt","r");
-  FILE *temp=fopen("temp.txt","w");
 
-  if(!sp || !temp){
+  FILE *sp = fopen("supplier.txt", "r");
+  FILE *temp = fopen("temp.txt", "w");
+
+  if (!sp || !temp)
+  {
     printf("Error open file!");
     return;
   }
-  while (fgets(line, sizeof(line), sp)){
+  while (fgets(line, sizeof(line), sp))
+  {
     sscanf(line, "%[^,]", currentID);
-    if(strcmp(id, currentID)==0){
-      found=1;
+    if (strcmp(id, currentID) == 0)
+    {
+      found = 1;
       continue;
-    } fputs(line, temp);
-  } 
+    }
+    fputs(line, temp);
+  }
   fclose(sp);
   fclose(temp);
-  if(found){
+  if (found)
+  {
     remove("supplier.txt");
-    rename("temp.txt","supplier.txt");
+    rename("temp.txt", "supplier.txt");
     printf("Supplier deleted successfully\n");
-  } else {
+  }
+  else
+  {
     remove("temp.txt");
     printf("Supplier not found!");
   }
 }
 
-void updatesupplier(){
+void updatesupplier()
+{
   char id[10], newspname[50], newcontact[50], line[100];
-  int found=0;
+  int found = 0;
   Supplier s;
-  
+
   printf("Enter Supplier id to update: ");
   scanf(" %s", id);
 
-  FILE *sp=fopen("supplier.txt","r");
-  FILE *temp=fopen("temp.txt","w");
+  FILE *sp = fopen("supplier.txt", "r");
+  FILE *temp = fopen("temp.txt", "w");
 
-  if(!sp || !temp){
+  if (!sp || !temp)
+  {
     printf("Error to open the file\n");
     return;
   }
-  while (fgets(line, sizeof(line), sp)){
+  while (fgets(line, sizeof(line), sp))
+  {
     sscanf(line, "%[^,],%[^,], %s", s.supplierID, s.suppliername, s.contact);
-    if (strcmp(id, s.supplierID)==0){
+    if (strcmp(id, s.supplierID) == 0)
+    {
       printf("Enter new supplier name: ");
       scanf(" %s", newspname);
       printf("Enter new supplier contct: ");
       scanf(" %s", newcontact);
       fprintf(temp, "%s,%s,%s\n", s.supplierID, newspname, newcontact);
-      found=1;
-    } else {
-      fputs(line,temp);
+      found = 1;
     }
-  } 
+    else
+    {
+      fputs(line, temp);
+    }
+  }
 
   fclose(sp);
   fclose(temp);
 
-  if (found){
+  if (found)
+  {
     remove("supplier.txt");
-    rename("temp.txt","supplier.txt");
+    rename("temp.txt", "supplier.txt");
     printf("Supplier update succesfully");
-  } else{
+  }
+  else
+  {
     remove("temp.txt");
     printf("Supplier ID not found!\n");
   }
 }
-
-
