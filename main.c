@@ -1025,6 +1025,8 @@ void updateInformation(User *user)
     printf("No changeds were made.\n");
   }
 }
+
+//////////////////////////////////////////////////////////////////////////////
 // role 3 category and supplier
 typedef struct
 {
