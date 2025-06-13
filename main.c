@@ -630,6 +630,15 @@ typedef struct
   int password;
 } User;
 
+typedef struct
+{
+  int transactionID;
+  char username[20];
+  float total;
+  int paidStatus;
+  char date[50];
+} Transaction;
+
 void user_login();
 void user_register();
 void user_functions(User *user); // for login-ed users
@@ -734,7 +743,7 @@ void user_login()
 }
 
 void placeOrder(User *user);
-void checkUnpaidOrders(User *user) {};
+void checkUnpaidOrders(User *user);
 void updateInformation(User *user);
 
 void user_functions(User *user)
@@ -897,6 +906,39 @@ void placeOrder(User *user)
       break;
     }
   } while (choice != 2);
+}
+
+void checkUnpaidOrders(User *user)
+{
+  printf("Please wait while we check for your unpaid orders...\n");
+  bool haveUnpaid = false;
+
+  FILE *file = fopen("transections.txt", "r");
+  if (file == NULL)
+  {
+    printf("Error opening file. Please try again.\n");
+    return;
+  }
+
+  char line[256];
+  Transaction curTransaction;
+
+  while (fgets(line, sizeof(line), file))
+  {
+    sscanf(line, "%d,%[^,],%f,%d,%s\n", &curTransaction.transactionID, curTransaction.username, &curTransaction.total, &curTransaction.paidStatus, curTransaction.date);
+
+    if (strcmp(user->username, curTransaction.username) == 0 && !curTransaction.paidStatus)
+    {
+      haveUnpaid = true;
+      printf("Transaction ID: %d, Total Amount: %.2f RM, Status: Unpaid\n", curTransaction.transactionID, curTransaction.total);
+    }
+  }
+
+  fclose(file);
+  if (!haveUnpaid)
+  {
+    printf("You have no UNPAID orders for now.\n");
+  }
 }
 
 void updateInformation(User *user)
