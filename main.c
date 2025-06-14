@@ -867,6 +867,8 @@ int getNextTransactionID()
   return id;
 }
 
+void showProducts() {}
+
 void placeOrder(User *user)
 {
   float total = 0;
@@ -893,7 +895,8 @@ void placeOrder(User *user)
       scanf(" %s", productID);
 
       FILE *productsFile = fopen("products.txt", "r");
-      if (productsFile == NULL)
+      FILE *tempFile = fopen("temp.txt", "w");
+      if (productsFile == NULL || tempFile == NULL)
       {
         printf("Error opening file. Please try again.\n");
         return;
@@ -911,16 +914,32 @@ void placeOrder(User *user)
           scanf("%d", &quantity);
 
           total += product.price * quantity;
-          printf("Item successfully added to the cart.\n");
+
+          // Remove the quantity from product data
+          product.quantity -= quantity;
+
+          fprintf(tempFile, "%s,%s,%s,%.2f,%d,%s\n", product.productID, product.name, product.categoryID, product.price, product.quantity, product.supplierID);
+        }
+        else
+        {
+          fputs(line, tempFile);
         }
       }
 
       fclose(productsFile);
+      fclose(tempFile);
 
       if (!found)
       {
+        remove("temp.txt");
         printf("The product ID does not exist. Please try again.\n");
         return;
+      }
+      else
+      {
+        remove("products.txt");
+        rename("temp.txt", "products.txt");
+        printf("Item successfully added to cart.\n");
       }
 
       break;
