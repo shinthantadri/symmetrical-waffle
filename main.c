@@ -29,6 +29,7 @@ void printWelcomeMessage()
   printf("\n");
 }
 
+void system_manager();
 void product_management();
 void stock_management();
 void category_supplier_management();
@@ -40,35 +41,21 @@ int main()
 
   do
   {
-
     printWelcomeMessage();
-    printf("1. Product Management\n2. Inventory and Stock Management\n3. Category and Supplier Management\n4. User and Trasaction Management\n5. Exit\n");
-
-    printf("Please select an option: ");
+    printf("1. User\n2. System manager\n3. Exit\nHow would you like to proceed?: ");
     scanf("%d", &main_menu_option);
-    while (getchar() != '\n')
-      ;
 
     switch (main_menu_option)
     {
     case 1:
-      product_management();
-      break;
-
-    case 2:
-      stock_management();
-      break;
-
-    case 3:
-      category_supplier_management();
-      break;
-
-    case 4:
-      printf("User and Transaction Management selected.\n");
       user();
       break;
 
-    case 5:
+    case 2:
+      system_manager();
+      break;
+
+    case 3:
       printf("Exiting the program. Goodbye!\n");
       return 0;
 
@@ -76,9 +63,76 @@ int main()
       printf("Invalid option. Please try again.\n");
       break;
     }
-  } while (main_menu_option != 5);
 
+  } while (main_menu_option != 3);
   return 0;
+}
+
+// System manager logic
+void system_manager()
+{
+  char username[20], admin[20];
+  int password, adminPassword;
+
+  printf("Enter username: ");
+  scanf(" %s", username);
+
+  printf("Enter password: ");
+  scanf("%d", &password);
+
+  FILE *file = fopen("managers.txt", "r");
+  if (file == NULL)
+  {
+    printf("Error opening file. Please try again.\n");
+    return;
+  }
+
+  fscanf(file, "%[^,],%d\n", admin, &adminPassword);
+  if (strcmp(username, admin) == 0 && password == adminPassword)
+  {
+    printf("Login successful!\n");
+
+    int option;
+
+    do
+    {
+
+      printf("1. Product Management\n2. Inventory Management\n3. Category and Supplier Management\n4. Transaction Management\n5. Exit to  menu\nPlease choose your option: ");
+      scanf("%d", &option);
+
+      switch (option)
+      {
+      case 1:
+        product_management();
+        break;
+
+      case 2:
+        stock_management();
+        break;
+
+      case 3:
+        category_supplier_management();
+        break;
+
+      case 4:
+        // code
+        break;
+
+      case 5:
+        printf("Returning to main menu...\n");
+        return;
+
+      default:
+        printf("Invalid option. Please try again.\n");
+        break;
+      }
+    } while (option != 5);
+  }
+  else
+  {
+    printf("Wrong username or password. Please try again.\n");
+    return;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
