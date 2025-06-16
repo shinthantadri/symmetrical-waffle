@@ -33,6 +33,7 @@ void system_manager();
 void product_management();
 void stock_management();
 void category_supplier_management();
+void transaction_management();
 void user();
 
 int main()
@@ -115,7 +116,7 @@ void system_manager()
         break;
 
       case 4:
-        // code
+        transaction_management();
         break;
 
       case 5:
@@ -961,16 +962,16 @@ void placeOrder(User *user)
       printf("Do you want to pay now? (Enter 1 to pay now or 0 to pay later): ");
       scanf("%d", &paidStatus);
 
-      FILE *transectionsFile = fopen("transections.txt", "a");
-      if (transectionsFile == NULL)
+      FILE *transactionsFile = fopen("transactions.txt", "a");
+      if (transactionsFile == NULL)
       {
         printf("Error opening file. Please try again.\n");
         return;
       }
 
-      fprintf(transectionsFile, "%d,%s,%.2f,%d,%s\n", transactionID, user->username, total, paidStatus, date);
+      fprintf(transactionsFile, "%d,%s,%.2f,%d,%s\n", transactionID, user->username, total, paidStatus, date);
       printf("Transaction successfully recorded.\n");
-      fclose(transectionsFile);
+      fclose(transactionsFile);
       break;
 
     case 3:
@@ -989,7 +990,7 @@ void checkUnpaidOrders(User *user)
   printf("Please wait while we check for your unpaid orders...\n");
   bool haveUnpaid = false;
 
-  FILE *file = fopen("transections.txt", "r");
+  FILE *file = fopen("transactions.txt", "r");
   if (file == NULL)
   {
     printf("Error opening file. Please try again.\n");
@@ -1432,5 +1433,156 @@ void updatesupplier()
   {
     remove("temp.txt");
     printf("Supplier ID not found!\n");
+  }
+}
+
+void transaction_management();
+void view_transaction();
+void delete_transaction();
+void update_transaction();
+
+// transaction part
+void transaction_management()
+{
+  int choice;
+  do
+  {
+    printf("\nTranscation Management Menu\n");
+    printf("1. View Transcations\n");
+    printf("2. Delete Transaation\n");
+    printf("3. Update Transaction\n");
+    printf("4. Back to Main Menu\n");
+    printf("Enter your choice: ");
+    scanf("%d", &choice);
+
+    switch (choice)
+    {
+    case 1:
+      view_transaction();
+      break;
+    case 2:
+      delete_transaction();
+      break;
+    case 3:
+      update_transaction();
+      break;
+    case 4:
+      printf("Returning to main menu...\n");
+      break;
+    default:
+      printf("Invalid option. try again please\n");
+    }
+  } while (choice != 4);
+}
+
+void view_transaction()
+{
+  FILE *tr = fopen("transactions.txt", "r");
+  if (!tr)
+  {
+    printf("Error opening the file!\n");
+    return;
+  }
+  char line[265];
+  Transaction t;
+  printf("----------------------------------------------------------------------------\n");
+  printf("| %-10s | %-10s | %-10s | %-10s | %-12s |\n", "TransactionID", "Name", "Total", "Status", "Date");
+  printf("----------------------------------------------------------------------------\n");
+
+  while (fgets(line, sizeof(line), tr))
+  {
+    sscanf(line, "%d,%[^,],%f,%d,%s\n", &t.transactionID, t.username, &t.total, &t.paidStatus, t.date);
+    printf("| %-13d | %-15s | %10.2f | %-10d | %-12s |\n", t.transactionID, t.username, t.total, t.paidStatus, t.date);
+  }
+  fclose(tr);
+  printf("\nPress Enter to return to the menu...");
+  getchar();
+  getchar();
+}
+
+void delete_transaction()
+{
+  char line[256];
+  int id, currentID;
+  int found = 0;
+
+  printf("Enter Transaction ID to delete: ");
+  scanf("%d", &id);
+
+  FILE *tr = fopen("transactions.txt", "r");
+  FILE *temp = fopen("temp.txt", "w");
+
+  if (!tr || !temp)
+  {
+    printf("Error opening the file\n");
+    return;
+  }
+  while (fgets(line, sizeof(line), tr))
+  {
+    sscanf(line, "%d,", &currentID);
+    if (id == currentID)
+    {
+      found = 1;
+      continue;
+    }
+    fputs(line, temp);
+  }
+  fclose(tr);
+  fclose(temp);
+  if (found)
+  {
+    remove("transactions.txt");
+    rename("temp.txt", "transactions.txt");
+    printf("Deleted successfully!\n");
+  }
+  else
+  {
+    remove("temp.txt");
+    printf("TransactionID not found!\n");
+  }
+}
+
+void update_transaction()
+{
+  char line[256];
+  int found = 0, id;
+  Transaction t;
+
+  printf("Enter TranscationID to update: ");
+  scanf("%d", &id);
+
+  FILE *tr = fopen("transactions.txt", "r");
+  FILE *temp = fopen("temp.txt", "w");
+
+  if (!tr || !temp)
+  {
+    printf("Error opening the file\n");
+    return;
+  }
+  while (fgets(line, sizeof(line), tr))
+  {
+    sscanf(line, "%d,%[^,],%f,%d,%s\n", &t.transactionID, t.username, &t.total, &t.paidStatus, t.date);
+
+    if (t.transactionID == id)
+    {
+      printf("Enter new status (1 for paid, 0 for unpaid): ");
+      scanf("%d", &t.paidStatus);
+      found = 1;
+    }
+    fprintf(temp, "%d,%s,%.2f,%d,%s\n", t.transactionID, t.username, t.total, t.paidStatus, t.date);
+  }
+  fclose(tr);
+  fclose(temp);
+
+  if (found)
+  {
+    remove("transactions.txt");
+    rename("temp.txt", "transactions.txt");
+    printf("Updated successfully!\n");
+  }
+  else
+  {
+    remove("temp.txt");
+    printf("TransactionID not found!\n");
   }
 }
