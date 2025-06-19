@@ -143,6 +143,8 @@ void addProduct();
 void viewProducts();
 void deleteProduct();
 void updateProduct();
+void filterproductbycategory();
+void filterproductbysupplier();
 
 void product_management()
 {
@@ -150,7 +152,7 @@ void product_management()
 
   do
   {
-    printf("Product Management selected.\n1. Add Product\n2. Update Product\n3. Delete Product\n4. View Products\n5. Back to Main Menu\nWhat would you like to do?: ");
+    printf("Product Management selected.\n1. Add Product\n2. Update Product\n3. Delete Product\n4. View Products\n5. Filter by Category\n6. Filter by Supplier\n7. Back to Main Menu\nWhat would you like to do?: ");
     scanf("%d", &product_option);
 
     switch (product_option)
@@ -172,6 +174,14 @@ void product_management()
       break;
 
     case 5:
+      filterproductbycategory();
+      break;
+
+    case 6:
+      filterproductbysupplier();
+      break;
+
+    case 7:
       printf("Returning to Main Menu...\n");
       break;
 
@@ -179,7 +189,7 @@ void product_management()
       printf("Invalid option. Please try again.\n");
       break;
     }
-  } while (product_option != 5);
+  } while (product_option != 7);
 }
 
 // char findProduct()
@@ -396,6 +406,90 @@ void viewProducts()
   printf("------------------------------------------------------------------------------------------\n");
 
   fclose(file);
+}
+
+void filterproductbycategory()
+{
+  char categoryID[10];
+  Product p;
+  char line[256];
+  int found = 0;
+
+  printf("Enter Category ID to filter (e.g 01): ");
+  scanf("%s", categoryID);
+
+  FILE *pr = fopen("products.txt", "r");
+  if (!pr)
+  {
+    printf("Error opening file!");
+    return;
+  }
+
+  printf("------------------------------------------------------------------------------------------\n");
+  printf("| %-8s | %-20s | %-10s | %-8s | %-8s | %-10s |\n", "ItemID", "Name", "CategoryID", "Price", "Stock", "SupplierID");
+  printf("------------------------------------------------------------------------------------------\n");
+
+  while (fgets(line, sizeof(line), pr))
+  {
+    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%s", p.productID, p.name, p.categoryID, &p.price, &p.quantity, p.supplierID);
+
+    if (strcmp(p.categoryID, categoryID) == 0)
+    {
+      printf("| %-8s | %-20s | %-10s | %8.2f | %-8d | %-10s |\n", p.productID, p.name, p.categoryID, p.price, p.quantity, p.supplierID);
+      found = 1;
+    }
+  }
+
+  if (!found)
+  {
+    printf("Nothing found!");
+  }
+  fclose(pr);
+  printf("Press Enter to return...");
+  getchar();
+  getchar();
+}
+
+void filterproductbysupplier()
+{
+  char supplierID[10];
+  Product p;
+  char line[256];
+  int found = 0;
+
+  printf("Enter Supplier ID to filter (e.g 101): ");
+  scanf("%s", supplierID);
+
+  FILE *pr = fopen("products.txt", "r");
+  if (!pr)
+  {
+    printf("Error opening file!");
+    return;
+  }
+
+  printf("------------------------------------------------------------------------------------------\n");
+  printf("| %-8s | %-20s | %-10s | %-8s | %-8s | %-10s |\n", "ItemID", "Name", "CategoryID", "Price", "Stock", "SupplierID");
+  printf("------------------------------------------------------------------------------------------\n");
+
+  while (fgets(line, sizeof(line), pr))
+  {
+    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%s", p.productID, p.name, p.categoryID, &p.price, &p.quantity, p.supplierID);
+
+    if (strcmp(p.supplierID, supplierID) == 0)
+    {
+      printf("| %-8s | %-20s | %-10s | %8.2f | %-8d | %-10s |\n", p.productID, p.name, p.categoryID, p.price, p.quantity, p.supplierID);
+      found = 1;
+    }
+  }
+
+  if (!found)
+  {
+    printf("Nothing found!");
+  }
+  fclose(pr);
+  printf("Press Enter to return...");
+  getchar();
+  getchar();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1436,12 +1530,12 @@ void updatesupplier()
   }
 }
 
+/////////////////////////////////////////////////////////////// transaction part
 void transaction_management();
 void view_transaction();
 void delete_transaction();
 void update_transaction();
 
-// transaction part
 void transaction_management()
 {
   int choice;
