@@ -1,4 +1,3 @@
-SupplierID,SupplierName,Contact
 101,Tech_Supplies_Co.,+6012-345-6789
 102,Office_Essentials_Inc.,+6013-987-6543
 103,Stationery_Plus,+6014-765-4321

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <time.h>
 
 #define low_threshold_amount 50
 
@@ -14,7 +15,21 @@ typedef struct // Using typedef allows user to create products without using str
   float price;
   int quantity;
   char supplierID[10];
+  char status[20];
 } Product;
+
+typedef struct
+{
+  char categoryID[5];
+  char categoryName[50];
+} Category;
+
+typedef struct
+{
+  char supplierID[5];
+  char suppliername[50];
+  char contact[50];
+} Supplier;
 
 void printWelcomeMessage()
 {
@@ -198,12 +213,75 @@ void product_management()
 // }
 
 // addProduct function
+bool productIdExist(char *productId)
+{
+  FILE *pFile = fopen("products.txt", "r");
+  char line[256];
+  Product p;
+
+  while (fgets(line, sizeof(line), pFile))
+  {
+    sscanf(line, "%[^,],", p.productID);
+
+    if (strcmp(productId, p.productID) == 0)
+    {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool categoryIdExist(char *categoryId)
+{
+  FILE *cFile = fopen("category.txt", "r");
+  char line[256];
+
+  Category c;
+  while (fgets(line, sizeof(line), cFile))
+  {
+    sscanf(line, "%[^,],", c.categoryID);
+
+    if (strcmp(categoryId, c.categoryID) == 0)
+    {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+bool supplierIdExist(char *supplierId)
+{
+  FILE *sFile = fopen("supplier.txt", "r");
+  char line[256];
+
+  Supplier s;
+  while (fgets(line, sizeof(line), sFile))
+  {
+    sscanf(line, "%[^,],", s.supplierID);
+
+    if (strcmp(supplierId, s.supplierID) == 0)
+    {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 void addProduct()
 {
   Product newProduct;
 
   printf("Enter product id: ");
   scanf(" %s", newProduct.productID);
+
+  if (!productIdExist(newProduct.productID))
+  {
+    printf("-----------------Product Id already Exist. Please choose another one.------------------\n");
+    return;
+  }
 
   printf("Enter product name (Please do not use spaces as the system is not designed for it, use _ instead): ");
   scanf(" %s", newProduct.name);
@@ -214,11 +292,25 @@ void addProduct()
   printf("Enter categoryID: ");
   scanf(" %s", newProduct.categoryID);
 
+  if (!categoryIdExist(newProduct.categoryID))
+  {
+    printf("Category ID does not exist. Please try again.\n");
+    return;
+  }
+
   printf("Enter supplierID: ");
   scanf(" %s", newProduct.supplierID);
 
+  if (!supplierIdExist(newProduct.supplierID))
+  {
+    printf("Supplier ID does not exist. Please try again.\n");
+    return;
+  }
+
   printf("Enter product price: ");
   scanf("%f", &newProduct.price);
+
+  strcpy(newProduct.status, "active");
 
   // open the products.txt file and add the product
   FILE *file = fopen("products.txt", "a");
@@ -228,7 +320,7 @@ void addProduct()
     return;
   }
 
-  fprintf(file, "%s,%s,%s,%.2f,%d,%s\n", newProduct.productID, newProduct.name, newProduct.categoryID, newProduct.price, newProduct.quantity, newProduct.supplierID);
+  fprintf(file, "%s,%s,%s,%.2f,%d,%s,%s\n", newProduct.productID, newProduct.name, newProduct.categoryID, newProduct.price, newProduct.quantity, newProduct.supplierID, newProduct.status);
   printf("Product added successfully.\n");
   fclose(file);
 }
@@ -309,14 +401,14 @@ void updateProduct()
 
   while (fgets(line, sizeof(line), file))
   {
-    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%s", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID);
+    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%[^,],%s", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID, product.status);
 
     if (strcmp(productIDToUpdate, product.productID) == 0)
     {
       found = true;
 
       int choice;
-      printf("1. Product ID\n2. Name\n3. CategoryID\n4. Price\n5. Quantity\n6. SupplierID\n7. Exit to Menu\nPlease enter your choice: ");
+      printf("1. Product ID\n2. Name\n3. CategoryID\n4. Price\n5. Quantity\n6. SupplierID\n7. Status\n8. Exit to main menu\nPlease enter your choice: ");
       scanf("%d", &choice);
 
       switch (choice)
@@ -324,33 +416,67 @@ void updateProduct()
       case 1:
         printf("Enter the new ID: ");
         scanf(" %s", product.productID);
+
+        if (!productIdExist(product.productID))
+        {
+          printf("-----------------Product Id already Exist. Please choose another one.------------------\n");
+          break;
+        }
         break;
+
       case 2:
         printf("Enter the new name: ");
         scanf(" %s", product.name);
         break;
+
       case 3:
         printf("Enter the new category ID: ");
         scanf(" %s", product.categoryID);
+        if (!categoryIdExist(product.categoryID))
+        {
+          printf("Category ID does not exist. Please try again.\n");
+          break;
+        }
         break;
+
       case 4:
         printf("Enter the new price: ");
         scanf("%f", &product.price);
         break;
+
       case 5:
         printf("Enter new quantity ");
         scanf("%d", &product.quantity);
         break;
+
       case 6:
         printf("Enter the new supplier ID: ");
         scanf(" %s", product.supplierID);
+        if (!supplierIdExist(product.supplierID))
+        {
+          printf("Supplier ID does not exist. Please try again.\n");
+          break;
+        }
         break;
+
       case 7:
+        printf("Enter the product status(active/discontinued) - case sensitive : ");
+        scanf(" %s", product.status);
+        if (strcmp(product.status, "discontinued") == 0)
+        {
+          product.quantity = 0;
+        };
+        break;
+
+      case 8:
         printf("Exiting to Menu...");
+        fclose(file);
+        fclose(temp);
+        remove("temp.txt");
         return;
       }
 
-      fprintf(temp, "%s,%s,%s,%.2f,%d,%s\n", product.productID, product.name, product.categoryID, product.price, product.quantity, product.supplierID);
+      fprintf(temp, "%s,%s,%s,%.2f,%d,%s,%s\n", product.productID, product.name, product.categoryID, product.price, product.quantity, product.supplierID, product.status);
       continue;
     }
     fputs(line, temp);
@@ -388,20 +514,21 @@ void viewProducts()
 
   // Table Header
   printf("------------------------------------------------------------------------------------------\n");
-  printf("| %-8s | %-20s | %-10s | %-8s | %-8s | %-10s |\n",
-         "ItemID", "Name", "CategoryID", "Price", "Stock", "SupplierID");
+  printf("| %-8s | %-20s | %-10s | %-8s | %-8s | %-10s | %-15s |\n",
+         "ItemID", "Name", "CategoryID", "Price", "Stock", "SupplierID", "Status");
   printf("------------------------------------------------------------------------------------------\n");
 
-  while (fscanf(file, "%[^,],%[^,],%[^,],%f,%d,%s\n", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID) != EOF)
+  while (fscanf(file, "%[^,],%[^,],%[^,],%f,%d,%[^,],%s\n", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID, product.status) != EOF)
   // scan line by line and assigne to each varaible each loop until end of file is reached which then it will exit the loop
   {
-    printf("| %-8s | %-20s | %-10s | %8.2f | %-8d | %-10s |\n",
+    printf("| %-8s | %-20s | %-10s | %8.2f | %-8d | %-10s | %-15s |\n",
            product.productID,
            product.name,
            product.categoryID,
            product.price,
            product.quantity,
-           product.supplierID);
+           product.supplierID,
+           product.status);
   }
   printf("------------------------------------------------------------------------------------------\n");
 
@@ -426,16 +553,16 @@ void filterproductbycategory()
   }
 
   printf("------------------------------------------------------------------------------------------\n");
-  printf("| %-8s | %-20s | %-10s | %-8s | %-8s | %-10s |\n", "ItemID", "Name", "CategoryID", "Price", "Stock", "SupplierID");
+  printf("| %-8s | %-20s | %-10s | %-8s | %-8s | %-10s | %-15s |\n", "ItemID", "Name", "CategoryID", "Price", "Stock", "SupplierID");
   printf("------------------------------------------------------------------------------------------\n");
 
   while (fgets(line, sizeof(line), pr))
   {
-    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%s", p.productID, p.name, p.categoryID, &p.price, &p.quantity, p.supplierID);
+    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%[^,],%s", p.productID, p.name, p.categoryID, &p.price, &p.quantity, p.supplierID, p.status);
 
     if (strcmp(p.categoryID, categoryID) == 0)
     {
-      printf("| %-8s | %-20s | %-10s | %8.2f | %-8d | %-10s |\n", p.productID, p.name, p.categoryID, p.price, p.quantity, p.supplierID);
+      printf("| %-8s | %-20s | %-10s | %8.2f | %-8d | %-10s | %-15s |\n", p.productID, p.name, p.categoryID, p.price, p.quantity, p.supplierID, p.status);
       found = 1;
     }
   }
@@ -468,16 +595,16 @@ void filterproductbysupplier()
   }
 
   printf("------------------------------------------------------------------------------------------\n");
-  printf("| %-8s | %-20s | %-10s | %-8s | %-8s | %-10s |\n", "ItemID", "Name", "CategoryID", "Price", "Stock", "SupplierID");
+  printf("| %-8s | %-20s | %-10s | %-8s | %-8s | %-10s | %-15s |\n", "ItemID", "Name", "CategoryID", "Price", "Stock", "SupplierID", "Status");
   printf("------------------------------------------------------------------------------------------\n");
 
   while (fgets(line, sizeof(line), pr))
   {
-    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%s", p.productID, p.name, p.categoryID, &p.price, &p.quantity, p.supplierID);
+    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%[^,],%s", p.productID, p.name, p.categoryID, &p.price, &p.quantity, p.supplierID, p.status);
 
     if (strcmp(p.supplierID, supplierID) == 0)
     {
-      printf("| %-8s | %-20s | %-10s | %8.2f | %-8d | %-10s |\n", p.productID, p.name, p.categoryID, p.price, p.quantity, p.supplierID);
+      printf("| %-8s | %-20s | %-10s | %8.2f | %-8d | %-10s | %-15s |\n", p.productID, p.name, p.categoryID, p.price, p.quantity, p.supplierID, p.status);
       found = 1;
     }
   }
@@ -701,6 +828,32 @@ void generateInventoryReport()
 {
   // Table Header
   printf("------------------------------------------------------------------------------------------\n");
+  printf("%-10s | %-15s | %-10s | %-15s \n", "ProductID", "Product_Name", "Current Stock", "Status");
+  printf("------------------------------------------------------------------------------------------\n");
+
+  FILE *productFile = fopen("products.txt", "r");
+
+  if (productFile == NULL)
+  {
+    printf("Error opening file.\n");
+    return;
+  }
+
+  char line[256];
+  Product product;
+  while (fgets(line, sizeof(line), productFile))
+  {
+    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%[^,],%s\n", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID, product.status);
+    printf("| %-10s | %-15s | %-10d | %-15s \n", product.productID, product.name, product.quantity, product.status);
+  }
+  printf("--------------------------------------------------------------------------------------\n");
+  fclose(productFile);
+}
+
+void generateActive()
+{
+  // Table Header
+  printf("------------------------------------------------------------------------------------------\n");
   printf("%-10s | %-15s | %-10s\n", "ProductID", "Product_Name", "Current Stock");
   printf("------------------------------------------------------------------------------------------\n");
 
@@ -716,20 +869,53 @@ void generateInventoryReport()
   Product product;
   while (fgets(line, sizeof(line), productFile))
   {
-    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%s\n", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID);
-    printf("| %-10s | %-15s | %-10d |\n", product.productID, product.name, product.quantity);
+    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%[^,],%s\n", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID, product.status);
+
+    if (strcmp(product.status, "active") == 0)
+    {
+      printf("| %-10s | %-15s | %-10d |\n", product.productID, product.name, product.quantity);
+    }
   }
   printf("--------------------------------------------------------------------------------------\n");
   fclose(productFile);
 }
 
+void generateDiscontinued()
+{
+  // Table Header
+  printf("------------------------------------------------------------------------------------------\n");
+  printf("%-10s | %-15s | %-10s\n", "ProductID", "Product_Name", "Current Stock");
+  printf("------------------------------------------------------------------------------------------\n");
+
+  FILE *productFile = fopen("products.txt", "r");
+
+  if (productFile == NULL)
+  {
+    printf("Error opening file.\n");
+    return;
+  }
+
+  char line[256];
+  Product product;
+  while (fgets(line, sizeof(line), productFile))
+  {
+    sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%[^,],%s\n", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID, product.status);
+
+    if (strcmp(product.status, "discontinued") == 0)
+    {
+      printf("| %-10s | %-15s | %-10d |\n", product.productID, product.name, product.quantity);
+    }
+  }
+  printf("--------------------------------------------------------------------------------------\n");
+  fclose(productFile);
+}
 void stock_management()
 {
   int stock_choice;
   do
   {
     printf("Stock management selected.\n");
-    printf("1. Add stock\n2. Remove stock\n3. Update stock\n4. delete stock(set it to 0)\n5. Alert low stock products\n6. Custom threshold Management\n7. Inventory Report\n8. Exit to main menu\n Please enter your choice: ");
+    printf("1. Add stock\n2. Remove stock\n3. Update stock\n4. delete stock(set it to 0)\n5. Alert low stock products\n6. Custom threshold Management\n7. Inventory Report All Products\n8. Inventory Report Active Products\n9. Inventory Report Discontinued Products\n10. Exit to main menu\n Please enter your choice: ");
     scanf("%d", &stock_choice);
 
     switch (stock_choice)
@@ -763,14 +949,22 @@ void stock_management()
       break;
 
     case 8:
-      printf("Returning to the main menu...");
+      generateActive();
+      break;
+
+    case 9:
+      generateDiscontinued();
+      break;
+
+    case 10:
+      printf("Returning to the main menu...\n");
       break;
 
     default:
-      printf("Invalid option. Please try again.");
+      printf("Invalid option. Please try again.\n");
       break;
     }
-  } while (stock_choice != 8);
+  } while (stock_choice != 10);
 }
 
 // User register, login and authentication
@@ -787,7 +981,7 @@ typedef struct
   int transactionID;
   char username[20];
   float total;
-  int paidStatus;
+  char paidStatus[10];
   char date[50];
 } Transaction;
 
@@ -971,10 +1165,24 @@ void placeOrder(User *user)
   char productID[10];
   Product product;
   bool found = false;
+  int quantity;
+
   char line[256];
-  int paidStatus;
-  char date[50];
+
+  char paidStatus[10]; // data to store
+  int paid;            // data to check
+
+  char date[20];
   int transactionID;
+
+  // Get turrent time
+  time_t t = time(NULL); // t will be in uncoverted raw time after the year 1900
+
+  // Convert time to local time
+  struct tm *currentTime = localtime(&t);
+
+  // Store the formatted time in date
+  sprintf(date, "%02d-%02d-%04d", currentTime->tm_mday, currentTime->tm_mon + 1, currentTime->tm_year + 1900);
 
   do
   {
@@ -997,23 +1205,31 @@ void placeOrder(User *user)
         return;
       }
 
+      bool insufficientStock = false;
+
       while (fgets(line, sizeof(line), productsFile))
       {
-        sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%s", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID);
+        sscanf(line, "%[^,],%[^,],%[^,],%f,%d,%[^,],%s", product.productID, product.name, product.categoryID, &product.price, &product.quantity, product.supplierID, product.status);
 
-        if (strcmp(productID, product.productID) == 0)
+        if (strcmp(productID, product.productID) == 0 && strcmp(product.status, "active") == 0)
         {
           found = true;
-          int quantity;
           printf("Enter quantity: ");
           scanf("%d", &quantity);
+
+          if (quantity > product.quantity)
+          {
+            printf("Please order with less quantity.\n");
+            insufficientStock = true; // Set the flag
+            break;
+          }
 
           total += product.price * quantity;
 
           // Remove the quantity from product data
           product.quantity -= quantity;
 
-          fprintf(tempFile, "%s,%s,%s,%.2f,%d,%s\n", product.productID, product.name, product.categoryID, product.price, product.quantity, product.supplierID);
+          fprintf(tempFile, "%s,%s,%s,%.2f,%d,%s\n", product.productID, product.name, product.categoryID, product.price, product.quantity, product.supplierID, product.status);
         }
         else
         {
@@ -1027,8 +1243,11 @@ void placeOrder(User *user)
       if (!found)
       {
         remove("temp.txt");
-        printf("The product ID does not exist. Please try again.\n");
-        return;
+        printf("The product ID does not exist or it was discontinued. Please try again.\n");
+      }
+      else if (insufficientStock)
+      {
+        printf("Insufficient stock. Cart not updated.\n");
       }
       else
       {
@@ -1049,12 +1268,18 @@ void placeOrder(User *user)
 
       transactionID = getNextTransactionID();
 
-      printf("Plese enter today date (dd/mm/yyyy): ");
-      scanf(" %s", date);
-
       printf("Total amount is %.2f\n", total);
       printf("Do you want to pay now? (Enter 1 to pay now or 0 to pay later): ");
-      scanf("%d", &paidStatus);
+      scanf("%d", &paid);
+
+      if (paid)
+      {
+        strcpy(paidStatus, "Paid");
+      }
+      else
+      {
+        strcpy(paidStatus, "Unpaid");
+      }
 
       FILE *transactionsFile = fopen("transactions.txt", "a");
       if (transactionsFile == NULL)
@@ -1063,7 +1288,7 @@ void placeOrder(User *user)
         return;
       }
 
-      fprintf(transactionsFile, "%d,%s,%.2f,%d,%s\n", transactionID, user->username, total, paidStatus, date);
+      fprintf(transactionsFile, "%d,%s,%.2f,%s,%s\n", transactionID, user->username, total, paidStatus, date);
       printf("Transaction successfully recorded.\n");
       fclose(transactionsFile);
       break;
@@ -1094,14 +1319,18 @@ void checkUnpaidOrders(User *user)
   char line[256];
   Transaction curTransaction;
 
+  // Print table header
+  printf("\n%-15s %-15s %-15s %-10s\n", "Transaction ID", "Total Amount (RM)", "Status", "Date");
+  printf("--------------------------------------------------------------\n");
+
   while (fgets(line, sizeof(line), file))
   {
-    sscanf(line, "%d,%[^,],%f,%d,%s\n", &curTransaction.transactionID, curTransaction.username, &curTransaction.total, &curTransaction.paidStatus, curTransaction.date);
+    sscanf(line, "%d,%[^,],%f,%[^,],%s\n", &curTransaction.transactionID, curTransaction.username, &curTransaction.total, curTransaction.paidStatus, curTransaction.date);
 
-    if (strcmp(user->username, curTransaction.username) == 0 && !curTransaction.paidStatus)
+    if (strcmp(user->username, curTransaction.username) == 0 && strcmp(curTransaction.paidStatus, "Unpaid") == 0)
     {
       haveUnpaid = true;
-      printf("Transaction ID: %d, Total Amount: %.2f RM, Status: Unpaid\n", curTransaction.transactionID, curTransaction.total);
+      printf("%-15d %-15.2f %-15s %-10s\n", curTransaction.transactionID, curTransaction.total, curTransaction.paidStatus, curTransaction.date);
     }
   }
 
@@ -1196,17 +1425,6 @@ void updateInformation(User *user)
 
 //////////////////////////////////////////////////////////////////////////////
 // role 3 category and supplier
-typedef struct
-{
-  char categoryID[5];
-  char categoryName[50];
-} Category;
-typedef struct
-{
-  char supplierID[5];
-  char suppliername[50];
-  char contact[50];
-} Supplier;
 void addcategory();
 void viewcategories();
 void updatecategory();
